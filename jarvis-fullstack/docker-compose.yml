@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # Backend API Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ../docker/Dockerfile.backend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - REDIS_HOST=redis
+      - MONGODB_URI=mongodb://mongo:27017/jarvis
+    depends_on:
+      - redis
+      - mongo
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - jarvis-network
+    restart: unless-stopped
+
+  # Frontend Service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../docker/Dockerfile.frontend
+    ports:
+      - "3001:80"
+    depends_on:
+      - backend
+    networks:
+      - jarvis-network
+    restart: unless-stopped
+
+  # Redis for Memory System
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - jarvis-network
+    restart: unless-stopped
+
+  # MongoDB for Long-term Memory
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - jarvis-network
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+  mongo-data:
+
+networks:
+  jarvis-network:
+    driver: bridge
